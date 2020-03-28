@@ -9,5 +9,7 @@
     <param name="port" value="10000" />
   </node>
 
+  <node pkg="pi_recorder" name="record_image" type ="record_image.py" output="screen" />
+
 </launch>
 
