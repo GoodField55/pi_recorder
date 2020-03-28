@@ -1,0 +1,13 @@
+<launch>
+  <include file="$(find pimouse_ros)/launch/pimouse.launch" />
+
+  <node pkg="cv_camera" name="cv_camera" type="cv_camera_node" >
+    <param name="rate" value="10.0" />
+  </node>
+
+  <node pkg="mjpeg_server" name="mjpeg_server" type="mjpeg_server" >
+    <param name="port" value="10000" />
+  </node>
+
+</launch>
+
