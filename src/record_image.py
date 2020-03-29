@@ -7,9 +7,12 @@ from datetime import datetime
 
 
 #
+#　USBカメラの撮影画像を　１０秒毎に　/mytemp/ ディレクトリに保する
+#　撮影中の動画および記録画像は、下記URLで確認できる
+#
 # http://192.168.1.***:10000/stream?topic=cv_camera/image_raw  -> USBカメラ撮影画像（リアルタイム）
 #                     :10000/stream?topic=/picture             -> 記録画像（パラメータで指定）
-#                         rosparam set /picture_name "/tmp/image_20200329-11:05:45.jpg"
+#                         rosparam set /picture_name "/image_20200329-11:05:45.jpg"
 #
 
 
@@ -22,6 +25,7 @@ class RecordImage():
         self.last_time = rospy.Time.now()
         self.last_picture = ""
         self.file_err_flag = False
+        self.dir = "/mytemp/"
 
     def get_image(self,img):
         try:
@@ -35,14 +39,14 @@ class RecordImage():
             return None
 
         org = self.image_org
-        
-        cv2.imwrite("/tmp/image_" + datetime.now().strftime("%Y%m%d-%H:%M:%S") +".jpg" ,org)
-#        cv2.imwrite("/tmp/image.jpg" ,org)
-        
+        fn = self.dir + "image_" + datetime.now().strftime("%Y%m%d-%H:%M:%S") +".jpg"        
+        cv2.imwrite(fn ,org)
+        rospy.loginfo(fn)
+
         return "saved"
 
     def monitor_picture(self):
-        picture_name = rospy.get_param('picture_name',"/tmp/image.jpg")
+        picture_name = self.dir + rospy.get_param('picture_name',"image.jpg")
         
         if self.last_picture != picture_name:
             self.file_err_flag = False
