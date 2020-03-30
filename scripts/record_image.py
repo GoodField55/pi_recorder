@@ -32,6 +32,7 @@ class RecordImage():
         self.file_list = []
         self.file_num = 0
         self.num = 0
+        self.dev_switch0 = "/dev/rtswitch0"
 
     def get_image(self,img):
         try:
@@ -49,6 +50,11 @@ class RecordImage():
         cv2.imwrite(fn ,org)
         rospy.loginfo("saved. file_num=%d , %s\n",self.file_num, fn)
         return "saved"
+
+    def record_image_with_judge(self):
+        if rospy.Time.now().to_sec() - self.last_time.to_sec() >= 10.0:   # 10秒毎に撮影
+            self.record_image()
+            self.last_time = rospy.Time.now()
 
     def monitor_picture(self):
         picture_name = self.dir + rospy.get_param('picture_name',"image.jpg")
@@ -96,6 +102,15 @@ class RecordImage():
     def disp_info(self):
         rospy.loginfo("num=%d , file_num=%d , %s\n",self.num, self.file_num, self.file_list[self.num])
 
+    def get_switch0(self):
+        try:
+            with open(self.dev_switch0,"r") as f:
+                data = f.readline()
+                #rospy.loginfo("date=%s\n", data)
+                return int(data)
+        except IOError:
+            rospy.logerr("can't read from " + self.dev_switch0)
+            return 999
 
 if __name__ == '__main__':
     rospy.init_node("record_image")
@@ -103,11 +118,28 @@ if __name__ == '__main__':
     ri.get_file_list()
 
     rate = rospy.Rate(10)
-    while not rospy.is_shutdown():
+    switch0_old = 0
+    switch0_flag = False
+    switch0_low_edge_time = rospy.Time.now()    # dummy
 
-        if rospy.Time.now().to_sec() - ri.last_time.to_sec() >= 10.0:
-            ri.record_image()
-            ri.last_time = rospy.Time.now()
+    while not rospy.is_shutdown():
+        sw0 = ri.get_switch0()
+        #rospy.loginfo("sw0 = %d\n", sw0)
+
+        if sw0 == 1:     # switch0 port = high
+            ri.record_image_with_judge()
+            switch0_old = 1
+        else:                           # switch0 port = low
+            if switch0_old == 1:      # switch0 high to low edge
+                switch0_low_edge_time = rospy.Time.now()
+                switch0_old = 0
+                switch0_flag = True     # true during low edge to 300sec
+
+            if switch0_flag:            # switch0 port is low within 300sec
+                if rospy.Time.now().to_sec() - switch0_low_edge_time.to_sec() <= 300.0:   # switch0 off から５分間撮影
+                    ri.record_image_with_judge()
+                else:
+                    switch0_flag = False    # switch0 port is low over 300sec
 
         ri.monitor_picture()
         ri.monitor_movie()
