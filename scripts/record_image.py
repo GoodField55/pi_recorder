@@ -8,6 +8,9 @@ from datetime import datetime
 
 
 #
+#  switch0 入力が high の時、下記画像記録機能が動作する
+#  switch0 入力が low になっても　300sec 間は記録を続ける
+#
 #　USBカメラの撮影画像を　１０秒毎に　/mytemp/ ディレクトリに保する
 #　撮影中の動画および記録画像は、下記URLで確認できる
 #
